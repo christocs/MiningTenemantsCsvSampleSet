@@ -8,7 +8,7 @@ outputFileName = "output/SampleSetConditions.csv"
 noRowsToAdd = 1000
 fieldnames = ['Tenid', 'CondType', 'CondNo', 'Seq', 'CondText', 'CategoryId']
 
-def getNewRowAtRandom(allRows, existingRows):
+def getNewRowAtRandom(allRows, existingRows, checkedText):
     randNum = random.randrange(len(allRows))
     randRow = allRows[randNum]
 
@@ -17,11 +17,31 @@ def getNewRowAtRandom(allRows, existingRows):
     for existingRow in existingRows:
         if existingRow['CondText'].strip().lower() == randRow['CondText'].strip().lower():
             exists = True
+            del existingRow
             break
     if not exists:
         return randRow
     else:
         return getNewRowAtRandom(allRows, existingRows)
+
+def getConditionTypesOfConditionText(allRows, testRow):
+    types = []
+    data = []
+    for row in allRows:
+        # print(simpText(testRow['CondText']), simpText(row['CondText']), simpText(testRow['CondText']) == simpText(row['CondText']))
+        if simpText(testRow['CondText']) == simpText(row['CondText']):
+            if (not row['CondType'] in types):
+                types.append(row['CondType'])
+                data.append(row)
+            # del allRows[allRows.index(row)]
+    # print(types)
+    return data
+
+def conditionTextMatches(text1, text2):
+    return simpText(text1) == simpText(text2)
+
+def simpText(text):
+    return text.strip().lower()
 
 def main():
     # load all raw data into memory
@@ -32,39 +52,21 @@ def main():
         print("Raw input file not found at: " + rawInputsFileName)
         exit(1)
 
-    # load existing data into memory and queue to write it to the output
-    rowsToWrite = []
-    try:
-        with open(outputFileName, "r") as csvMerge:
-            rowsToWrite = list(csv.DictReader(csvMerge))
-            print("Sample set already exist, merging...")
-    except IOError:
-        print("Sample set doesn't exist, starting from scratch...")
+    a = {"foo": "bar", "bax": "tax"}
 
-    # randomly add rows that are not duplicates
-    for i in range(noRowsToAdd):
-        rowsToWrite.append(getNewRowAtRandom(rawList, rowsToWrite))
+    checkedText = []
+    for i in range(len(rawList)):
+        if not simpText(rawList[i]['CondText']) in checkedText:
+            types = getConditionTypesOfConditionText(rawList, rawList[i])
+            checkedText.append(simpText(rawList[i]['CondText']))
+            if len(types) > 1:
+                print(i)
+                print(types[0])
+                print(types[1])
 
-    # make sure output directory exists
-    if not os.path.exists('output'):
-        os.makedirs('output')
-
-    # write rows to file
-    with open(outputFileName, "w") as csvOutput:
-        writer = csv.DictWriter(csvOutput, fieldnames=fieldnames, quoting=csv.QUOTE_NONNUMERIC)
-
-        writer.writeheader()
-
-        for row in rowsToWrite:
-            rowData = {}
-            for fieldname in fieldnames:
-                if fieldname == "CategoryId" and not "CategoryId" in row:
-                    rowData[fieldname] = 0
-                else:
-                    rowData[fieldname] = row[fieldname]
-            writer.writerow(rowData)
-
-    print("Sample set generated at: " + outputFileName)
+        if i % 100 == 0:
+            print(i)
+        del rawList[i]
 
 if __name__ == '__main__':
     main()
