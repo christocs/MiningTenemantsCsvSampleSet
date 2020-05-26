@@ -1,5 +1,5 @@
 import csv
-
+import re
 
 def fix(inputFileName, outputFileName):
     # read headers
@@ -39,7 +39,7 @@ def fix(inputFileName, outputFileName):
 
 def getRegex(text):
     # start part of the regex
-    regex = "(?i)^[/\s?.*-:]*"
+    regex = "(?i)^[\s?.*-:]*"
     lastCharacterWasNotSpaceOrPunctuation = False
     inWildcard = False
 
@@ -112,3 +112,45 @@ def generateRegex(inputFileName, outputFileName):
                     rowData[field] = row[field]
             writer.writerow(rowData)
         print("Output: " + outputFileName)
+
+def stripDuplicateRegex(templatesFile, outputFileName):
+    # read input headers
+    try:
+        with open(templatesFile, "r") as csvInput:
+            reader = csv.reader(csvInput)
+            headers = next(reader)
+    except IOError:
+        print("File not found: " + templatesFile)
+        return 1
+
+    # read template
+    try:
+        with open(templatesFile, "r") as csvInput:
+            templatesList = list(csv.DictReader(csvInput))
+    except IOError:
+        print("File not found: " + templatesFile)
+        return 1
+
+    regexExpressions = []
+    for template in templatesList:
+        regexExpressions.append(re.compile(template["Regex"]))
+
+    usedExpressions = []
+
+    with open(outputFileName, "w") as csvOutput:
+        writer = csv.DictWriter(csvOutput, fieldnames=headers, quoting=csv.QUOTE_NONNUMERIC)
+
+        writer.writeheader()
+
+        for i in range(len(templatesList)):
+            matchingItemAlreadySaved = False
+            for j in range(len(regexExpressions)):
+                if (regexExpressions[j].match(templatesList[i]["Text"])):
+                    matchingItemAlreadySaved = True
+                    break
+
+            if not matchingItemAlreadySaved:
+                # only works since indexes are exactly the same between template list and regex list
+                usedExpressions.append(regexExpressions[i])
+                writer.writerow(templatesList[i])
+    print("Strip duplicate regex output: " + outputFileName)

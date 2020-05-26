@@ -1,7 +1,7 @@
 import csv
 import re
 
-def printNoMatches(inputFileName, templatesFile):
+def printNoMatches(inputFileName, templatesFile, inputColumn, printEveryMatch):
 
     # read contents
     try:
@@ -25,13 +25,85 @@ def printNoMatches(inputFileName, templatesFile):
 
     matches = 0
     count = 0
-    for input in inputList:
+    for i in range(len(inputList)):
         print(matches, "/", count)
         count += 1
-        for regex in regexExpressions:
-            if regex.match(input["CondText"]):
+        for j in range(len(regexExpressions)):
+            if regexExpressions[j].match(inputList[i][inputColumn]):
+                if (printEveryMatch):
+                    print("Match", i, j)
+                    if (i != j):
+                        print("Match isn't exact index")
                 matches += 1
                 break
+
+def selfMatchTemplateFile(templatesFile):
+    # read
+    try:
+        with open(templatesFile, "r") as csvInput:
+            templatesList = list(csv.DictReader(csvInput))
+    except IOError:
+        print("File not found: " + inputFileName)
+        return 1
+
+    regexExpressions = []
+    for template in templatesList:
+        regexExpressions.append(re.compile(template["Regex"]))
+
+    matches = 0
+    count = 0
+    for i in range(len(templatesList)):
+        count += 1
+        if (regexExpressions[i].match(templatesList[i]["Text"])):
+            matches += 1
+            print(i, "Match", str(matches) + "/" + str(count))
+        else:
+            print(i, "No match", str(matches) + "/" + str(count))
+            print(templatesList[i]["Text"], templatesList[i]["Regex"])
+
+def selfMatchTemplateFileFindOverlappingTemplates(templatesFile):
+    # read
+    try:
+        with open(templatesFile, "r") as csvInput:
+            templatesList = list(csv.DictReader(csvInput))
+    except IOError:
+        print("File not found: " + inputFileName)
+        return 1
+
+    regexExpressions = []
+    for template in templatesList:
+        regexExpressions.append(re.compile(template["Regex"]))
+
+    count = 0
+    multipleIdentifiers = 0
+    for i in range(len(templatesList)):
+        duplicates = []
+
+        for j in range(len(templatesList)):
+            if (regexExpressions[i].match(templatesList[j]["Text"]) and templatesList[j]["Identifier"] != templatesList[i]["Identifier"] and templatesList[j]["Version No"] != templatesList[i]["Version No"]):
+            # if (regexExpressions[i].match(templatesList[j]["Text"]) and templatesList[j]["Identifier"] != templatesList[i]["Identifier"]):
+                duplicates.append(templatesList[j])
+
+        if len(duplicates) < 0:
+            print("No matches", templatesList[i])
+        elif len(duplicates) > 1:
+            count += 1
+            print("Multiple matches", templatesList[i]["Identifier"], templatesList[i]["Version No"])
+            takenIdentifiers = []
+            for duplicate in duplicates:
+                print("\t", duplicate["Identifier"], duplicate["Version No"], duplicate["Text"])
+                identifierTaken = False
+                for takenIdentifier in takenIdentifiers:
+                    if takenIdentifier == duplicate["Identifier"]:
+                       identifierTaken = True
+                if not identifierTaken:
+                    takenIdentifiers.append(duplicate["Identifier"])
+            if len(takenIdentifiers) > 1:
+                multipleIdentifiers += 1
+            print()
+
+    print("Overlapping items", count, multipleIdentifiers)
+
 
 def dumpUnmatchedRows(inputFileName, templatesFile, outputFileName):
 
