@@ -49,7 +49,8 @@ def getRegex(text):
         # if in wildcard, check if it is the end of the wildcard. if it is, add the wildcard regex, else do nothing
         if inWildcard:
             if currentCharacter == '*' and ((i + 1) < len(text)) and text[i + 1] == '*':
-                regex += "[A-Z0-9/\-]+"
+                # regex += "[A-Z0-9/\-]+"
+                regex += ".+"
                 lastCharacterWasNotSpaceOrPunctuation = True
                 inWildcard = False
                 # skip the last character of the wildcard
@@ -130,27 +131,30 @@ def stripDuplicateRegex(templatesFile, outputFileName):
     except IOError:
         print("File not found: " + templatesFile)
         return 1
+    #
+    # regexExpressions = []
+    # for template in templatesList:
+    #     regexExpressions.append(re.compile(template["Regex"]))
+    #
+    # print("Regex compiled")
+    usedItems = []
+    removeQueue = []
 
-    regexExpressions = []
-    for template in templatesList:
-        regexExpressions.append(re.compile(template["Regex"]))
+    for i in range(len(templatesList)):
+        if templatesList[i]["Regex"] not in usedItems:
+            usedItems.append(templatesList[i]["Regex"])
+        else:
+            print("Removed row " + str(i + 1))
+            print(templatesList[i]["Regex"])
+            removeQueue.append(i)
 
-    usedExpressions = []
-
+    print('dup count', len(removeQueue))
     with open(outputFileName, "w") as csvOutput:
         writer = csv.DictWriter(csvOutput, fieldnames=headers, quoting=csv.QUOTE_NONNUMERIC)
 
         writer.writeheader()
 
         for i in range(len(templatesList)):
-            matchingItemAlreadySaved = False
-            for j in range(len(regexExpressions)):
-                if (regexExpressions[j].match(templatesList[i]["Text"])):
-                    matchingItemAlreadySaved = True
-                    break
-
-            if not matchingItemAlreadySaved:
-                # only works since indexes are exactly the same between template list and regex list
-                usedExpressions.append(regexExpressions[i])
+            if i not in removeQueue:
                 writer.writerow(templatesList[i])
     print("Strip duplicate regex output: " + outputFileName)

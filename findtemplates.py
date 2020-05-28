@@ -26,7 +26,8 @@ def printNoMatches(inputFileName, templatesFile, inputColumn, printEveryMatch):
     matches = 0
     count = 0
     for i in range(len(inputList)):
-        print(matches, "/", count)
+        if i % 1000 == 0:
+            print(str(matches) + "/" + str(count))
         count += 1
         for j in range(len(regexExpressions)):
             if regexExpressions[j].match(inputList[i][inputColumn]):
@@ -43,7 +44,7 @@ def selfMatchTemplateFile(templatesFile):
         with open(templatesFile, "r") as csvInput:
             templatesList = list(csv.DictReader(csvInput))
     except IOError:
-        print("File not found: " + inputFileName)
+        print("File not found: " + templatesFile)
         return 1
 
     regexExpressions = []
@@ -67,7 +68,7 @@ def selfMatchTemplateFileFindOverlappingTemplates(templatesFile):
         with open(templatesFile, "r") as csvInput:
             templatesList = list(csv.DictReader(csvInput))
     except IOError:
-        print("File not found: " + inputFileName)
+        print("File not found: " + templatesFile)
         return 1
 
     regexExpressions = []
