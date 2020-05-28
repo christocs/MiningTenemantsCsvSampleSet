@@ -37,7 +37,7 @@ def fix(inputFileName, outputFileName):
             writer.writerow(rowData)
         print("Output: " + outputFileName)
 
-def getRegex(text):
+def getRegex(text, greedyRegex):
     # start part of the regex
     regex = "(?i)^[\s?.*-:]*"
     lastCharacterWasNotSpaceOrPunctuation = False
@@ -49,8 +49,10 @@ def getRegex(text):
         # if in wildcard, check if it is the end of the wildcard. if it is, add the wildcard regex, else do nothing
         if inWildcard:
             if currentCharacter == '*' and ((i + 1) < len(text)) and text[i + 1] == '*':
-                # regex += "[A-Z0-9/\-]+"
-                regex += ".+"
+                if (greedyRegex):
+                    regex += ".+"
+                else:
+                    regex += "[A-Z0-9/\-]+"
                 lastCharacterWasNotSpaceOrPunctuation = True
                 inWildcard = False
                 # skip the last character of the wildcard
@@ -90,6 +92,9 @@ def generateRegex(inputFileName, outputFileName):
     if ("Regex" not in headers):
         headers.append("Regex")
 
+    if ("Regex Conservative" not in headers):
+        headers.append("Regex Conservative")
+
     # read contents
     try:
         with open(inputFileName, "r") as csvInput:
@@ -108,7 +113,9 @@ def generateRegex(inputFileName, outputFileName):
             rowData = {}
             for field in headers:
                 if (field == "Regex"):
-                    rowData["Regex"] = getRegex(row["Text"])
+                    rowData["Regex"] = getRegex(row["Text"], True)
+                elif (field == "Regex Conservative"):
+                    rowData["Regex Conservative"] = getRegex(row["Text"], False)
                 else:
                     rowData[field] = row[field]
             writer.writerow(rowData)
@@ -131,12 +138,7 @@ def stripDuplicateRegex(templatesFile, outputFileName):
     except IOError:
         print("File not found: " + templatesFile)
         return 1
-    #
-    # regexExpressions = []
-    # for template in templatesList:
-    #     regexExpressions.append(re.compile(template["Regex"]))
-    #
-    # print("Regex compiled")
+
     usedItems = []
     removeQueue = []
 

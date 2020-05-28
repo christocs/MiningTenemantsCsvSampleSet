@@ -158,3 +158,129 @@ def dumpUnmatchedRows(inputFileName, templatesFile, outputFileName):
                 writer.writerow(row)
 
         print("Output: " + outputFileName)
+
+def dumpMatchedRows(inputFileName, templatesFile, outputFileName):
+
+    # read input headers
+    try:
+        with open(inputFileName, "r") as csvInput:
+            reader = csv.reader(csvInput)
+            headers = next(reader)
+    except IOError:
+        print("File not found: " + inputFileName)
+        return 1
+
+    if ("RegexId" not in headers):
+        headers.append("RegexId")
+
+    if ("RegexVer" not in headers):
+        headers.append("RegexVer")
+
+    # read input contents
+    try:
+        with open(inputFileName, "r") as csvInput:
+            inputList = list(csv.DictReader(csvInput))
+    except IOError:
+        print("File not found: " + inputFileName)
+        return 1
+
+    # read templates
+    try:
+        with open(templatesFile, "r") as csvInput:
+            templatesList = list(csv.DictReader(csvInput))
+    except IOError:
+        print("File not found: " + inputFileName)
+        return 1
+
+    regexExpressions = []
+    for template in templatesList:
+        regexExpressions.append(re.compile(template["Regex"]))
+
+    # write
+    with open(outputFileName, "w") as csvOutput:
+        writer = csv.DictWriter(csvOutput, fieldnames=headers, quoting=csv.QUOTE_NONNUMERIC)
+
+        writer.writeheader()
+
+        count = 0
+        for row in inputList:
+            count += 1
+            if count % 10000 == 0:
+                print(count)
+
+            for i in range(len(regexExpressions)):
+                if regexExpressions[i].match(row["CondText"]):
+                    regexId = templatesList[i]["Identifier"]
+                    regexVer = templatesList[i]["Version No"]
+                    row["RegexId"] = regexId
+                    row["RegexVer"] = regexVer
+                    writer.writerow(row)
+                    break
+
+        print("Output: " + outputFileName)
+
+def dumpMatchedRowsWhichOnlyMatchGreedyRegex(inputFileName, templatesFile, outputFileName):
+
+    # read input headers
+    try:
+        with open(inputFileName, "r") as csvInput:
+            reader = csv.reader(csvInput)
+            headers = next(reader)
+    except IOError:
+        print("File not found: " + inputFileName)
+        return 1
+
+    if ("RegexId" not in headers):
+        headers.append("RegexId")
+
+    if ("RegexVer" not in headers):
+        headers.append("RegexVer")
+
+    # read input contents
+    try:
+        with open(inputFileName, "r") as csvInput:
+            inputList = list(csv.DictReader(csvInput))
+    except IOError:
+        print("File not found: " + inputFileName)
+        return 1
+
+    # read templates
+    try:
+        with open(templatesFile, "r") as csvInput:
+            templatesList = list(csv.DictReader(csvInput))
+    except IOError:
+        print("File not found: " + inputFileName)
+        return 1
+
+    greedyExpressions = []
+    for template in templatesList:
+        greedyExpressions.append(re.compile(template["Regex"]))
+
+    converativeExpressions = []
+    for template in templatesList:
+        converativeExpressions.append(re.compile(template["Regex Conservative"]))
+
+    # write
+    with open(outputFileName, "w") as csvOutput:
+        writer = csv.DictWriter(csvOutput, fieldnames=headers, quoting=csv.QUOTE_NONNUMERIC)
+
+        writer.writeheader()
+
+        count = 0
+        for row in inputList:
+            count += 1
+            if count % 10000 == 0:
+                print(count)
+
+            for i in range(len(greedyExpressions)):
+                greedyMatch = greedyExpressions[i].match(row["CondText"])
+                conservativeMatch = converativeExpressions[i].match(row["CondText"])
+                if greedyMatch and not conservativeMatch:
+                    regexId = templatesList[i]["Identifier"]
+                    regexVer = templatesList[i]["Version No"]
+                    row["RegexId"] = regexId
+                    row["RegexVer"] = regexVer
+                    writer.writerow(row)
+                    break
+
+        print("Output: " + outputFileName)
