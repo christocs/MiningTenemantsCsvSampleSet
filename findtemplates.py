@@ -1,7 +1,7 @@
 import csv
 import re
 
-def printNoMatches(inputFileName, templatesFile, inputColumn, printEveryMatch):
+def printNoMatches(inputFileName, templatesFile, inputColumn, conservativeMatch, printEveryMatch):
 
     # read contents
     try:
@@ -20,8 +20,11 @@ def printNoMatches(inputFileName, templatesFile, inputColumn, printEveryMatch):
         return 1
 
     regexExpressions = []
+    regexColumn = "Regex"
+    if (conservativeMatch):
+        regexColumn = "Regex Conservative"
     for template in templatesList:
-        regexExpressions.append(re.compile(template["Regex"]))
+        regexExpressions.append(re.compile(template[regexColumn]))
 
     matches = 0
     count = 0
@@ -37,6 +40,8 @@ def printNoMatches(inputFileName, templatesFile, inputColumn, printEveryMatch):
                         print("Match isn't exact index")
                 matches += 1
                 break
+
+    print("Final result: " + str(matches) + "/" + str(count))
 
 def selfMatchTemplateFile(templatesFile):
     # read
